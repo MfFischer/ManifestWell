@@ -1,0 +1,156 @@
+// ManifestWell Database Schema
+// Local-first mobile wellness app - single user per device
+//
+// Note: This is a local-only app. All data stays on device.
+// The User model represents the single local user.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Single local user per device
+// ID is always 'local-user' (see src/lib/auth/local-user.ts)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  bio       String?
+
+  // App Lock (PIN/Biometric)
+  biometricEnabled Boolean  @default(false)
+  pinHash          String?  // Hashed PIN for app lock
+
+  // Security
+  twoFactorEnabled Boolean  @default(false)
+  encryptionSalt   String?  // For encrypting sensitive data
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  meals          Meal[]
+  activities     Activity[]
+  meditations    MeditationSession[]
+  manifestations ManifestationSession[]
+  journalEntries JournalEntry[]
+  goals          Goal[]
+}
+
+model Meal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      String   // breakfast, lunch, dinner, snack
+  calories  Int
+  protein   Float?
+  carbs     Float?
+  fat       Float?
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  type        String   // cardio, strength, yoga, walking, etc.
+  duration    Int      // in minutes
+  calories    Int?
+  intensity   String?  // low, medium, high
+  notes       String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model MeditationSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  type       String   // breathing, mindfulness, visualization, sleep
+  duration   Int      // in minutes
+  videoUrl   String?  // YouTube link
+  completed  Boolean  @default(false)
+  rating     Int?     // 1-5 stars
+  notes      String?
+  date       DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model ManifestationSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  technique   String   // silva_method, quantum_jumping, visualization, affirmation
+  duration    Int      // in minutes
+  videoUrl    String?  // YouTube link
+  intention   String
+  completed   Boolean  @default(false)
+  feeling     String?  // emotional state after
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?  // Searchable, not encrypted
+  content   String   // Will be encrypted for private entries
+  mood      String?  // happy, grateful, stressed, etc. (not encrypted for analytics)
+  tags      String?  // comma separated (not encrypted for search)
+  isPrivate Boolean  @default(true)
+
+  // Encryption metadata (for E2E encrypted content)
+  isEncrypted        Boolean @default(false)
+  encryptionVersion  Int?    @default(1)
+  nonce              String? // Unique nonce for encryption
+
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String   // fitness, nutrition, meditation, manifestation
+  targetValue Float?
+  currentValue Float?
+  unit        String?
+  startDate   DateTime @default(now())
+  targetDate  DateTime
+  status      String   @default("active") // active, completed, paused
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, status])
+}
