@@ -1,0 +1,581 @@
+'use client'
+
+import { useState } from 'react'
+import { Brain, Play, CheckCircle, ExternalLink, Clock, Star, Heart, Sparkles, TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { YouTubePlayer } from '@/components/youtube-player'
+import { MeditationType, ExperienceLevel } from '@/types'
+
+interface Meditation {
+  id: string
+  title: string
+  description: string
+  type: MeditationType | 'stress_relief'
+  duration: number
+  videoUrl?: string
+  level: ExperienceLevel
+  views?: string
+  popularity?: number
+}
+
+interface MeditationSession {
+  id: string
+  meditationId: string
+  completed: boolean
+  rating?: number
+  notes?: string
+  date: Date
+}
+
+export function MeditationModule() {
+  const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null)
+  const [sessionDialog, setSessionDialog] = useState(false)
+  const [rating, setRating] = useState(0)
+  const [notes, setNotes] = useState('')
+  const [completedSessions, setCompletedSessions] = useState<MeditationSession[]>([])
+
+  const meditations: Meditation[] = [
+    // BREATHING - Unique breathing meditation videos
+    {
+      id: '1',
+      title: 'Morning Breathing (10 min)',
+      description: 'Start your day with this popular guided breathing exercise',
+      type: 'breathing',
+      duration: 10,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=inpok4MKVLM',
+      views: '50M+',
+      popularity: 1
+    },
+    {
+      id: '2',
+      title: 'Deep Breathing Exercise',
+      description: 'Calm your mind with this deep breathing practice',
+      type: 'breathing',
+      duration: 15,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=kpsL1JtW0A',
+      views: '40M+',
+      popularity: 2
+    },
+    {
+      id: '3',
+      title: 'Box Breathing for Anxiety',
+      description: 'Simple breathing technique to reduce stress and anxiety',
+      type: 'breathing',
+      duration: 5,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=6p_yKMFSYQ',
+      views: '35M+',
+      popularity: 3
+    },
+
+    // MINDFULNESS - Popular mindfulness meditations
+    {
+      id: '4',
+      title: 'Body Scan Meditation',
+      description: 'Full body awareness and relaxation meditation',
+      type: 'mindfulness',
+      duration: 20,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=nDq6YpA8G1o',
+      views: '30M+',
+      popularity: 4
+    },
+    {
+      id: '5',
+      title: 'Mindfulness for Beginners',
+      description: 'A gentle introduction to mindfulness practice',
+      type: 'mindfulness',
+      duration: 10,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=2A2lxGSC5ZI',
+      views: '25M+',
+      popularity: 5
+    },
+    {
+      id: '6',
+      title: 'Present Moment Meditation',
+      description: 'Cultivate awareness of the present moment',
+      type: 'mindfulness',
+      duration: 15,
+      level: 'intermediate',
+      videoUrl: 'https://www.youtube.com/watch?v=yL_m9wAq7w',
+      views: '18M+',
+      popularity: 6
+    },
+    {
+      id: '7',
+      title: 'Focus & Clarity Meditation',
+      description: 'Improve concentration and mental clarity',
+      type: 'mindfulness',
+      duration: 25,
+      level: 'intermediate',
+      videoUrl: 'https://www.youtube.com/watch?v=z6b0pZ3t7c',
+      views: '12M+',
+      popularity: 7
+    },
+
+    // VISUALIZATION - Popular visualization meditations
+    {
+      id: '8',
+      title: 'Loving Kindness Meditation',
+      description: 'Cultivate compassion and positive emotions',
+      type: 'visualization',
+      duration: 15,
+      level: 'intermediate',
+      videoUrl: 'https://www.youtube.com/watch?v=Hj_5m5i0x8',
+      views: '28M+',
+      popularity: 8
+    },
+    {
+      id: '9',
+      title: 'Gratitude Meditation',
+      description: 'Practice gratitude to attract positivity',
+      type: 'visualization',
+      duration: 10,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=7eWz0Dk0gF0',
+      views: '20M+',
+      popularity: 9
+    },
+
+    // STRESS RELIEF - Popular stress relief videos
+    {
+      id: '10',
+      title: 'Stress Relief Meditation',
+      description: 'Release tension and calm your nervous system',
+      type: 'stress_relief',
+      duration: 15,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=WOBBdoQDw6g',
+      views: '40M+',
+      popularity: 10
+    },
+    {
+      id: '11',
+      title: 'Anxiety Release',
+      description: 'Let go of anxiety and find inner peace',
+      type: 'stress_relief',
+      duration: 20,
+      level: 'intermediate',
+      videoUrl: 'https://www.youtube.com/watch?v=5jW5G5x6Y7A',
+      views: '25M+',
+      popularity: 11
+    },
+    {
+      id: '12',
+      title: 'Calm Mind Meditation',
+      description: 'Soothe your mind and reduce overthinking',
+      type: 'stress_relief',
+      duration: 12,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=ZToicqcCT-5U',
+      views: '16M+',
+      popularity: 12
+    },
+
+    // SLEEP - Popular sleep meditations
+    {
+      id: '13',
+      title: 'Guided Sleep Meditation',
+      description: 'Deep relaxation for restful sleep',
+      type: 'sleep',
+      duration: 20,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=1ZYbU82GVz4',
+      views: '65M+',
+      popularity: 13
+    },
+    {
+      id: '14',
+      title: 'Deep Sleep Journey',
+      description: 'Journey into deep relaxation and sleep',
+      type: 'sleep',
+      duration: 30,
+      level: 'intermediate',
+      videoUrl: 'https://www.youtube.com/watch?v=m1f4z0c5pQ',
+      views: '28M+',
+      popularity: 14
+    },
+    {
+      id: '15',
+      title: 'Bedtime Meditation',
+      description: 'Peaceful meditation to help you fall asleep',
+      type: 'sleep',
+      duration: 15,
+      level: 'beginner',
+      videoUrl: 'https://www.youtube.com/watch?v=8k4w0QX-8U',
+      views: '38M+',
+      popularity: 15
+    },
+
+    // ADVANCED - For experienced practitioners
+    {
+      id: '16',
+      title: 'Advanced Mindfulness',
+      description: 'Deep meditation for experienced practitioners',
+      type: 'mindfulness',
+      duration: 45,
+      level: 'advanced',
+      videoUrl: 'https://www.youtube.com/watch?v=Jswl8d0xKjQ',
+      views: '11M+',
+      popularity: 16
+    },
+    {
+      id: '17',
+      title: 'Transcendental Meditation',
+      description: 'Advanced meditation practice for deep inner peace',
+      type: 'visualization',
+      duration: 60,
+      level: 'advanced',
+      videoUrl: 'https://www.youtube.com/watch?v=0x2p3W7H0c',
+      views: '8M+',
+      popularity: 17
+    }
+  ]
+
+  const getTypeInfo = (type: string) => {
+    const types: Record<string, { label: string; color: string; icon: any }> = {
+      breathing: { label: 'Breathing', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300', icon: Brain },
+      mindfulness: { label: 'Mindfulness', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', icon: Brain },
+      visualization: { label: 'Visualization', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300', icon: Sparkles },
+      sleep: { label: 'Sleep', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300', icon: Heart },
+      stress_relief: { label: 'Stress Relief', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', icon: Heart },
+    }
+    return types[type] || types.breathing
+  }
+
+  const getLevelInfo = (level: string) => {
+    const levels: Record<string, { label: string; color: string }> = {
+      beginner: { label: 'Beginner', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+      intermediate: { label: 'Intermediate', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+      advanced: { label: 'Advanced', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+    }
+    return levels[level] || levels.beginner
+  }
+
+  const handleCompleteSession = () => {
+    if (selectedMeditation) {
+      const newSession: MeditationSession = {
+        id: Date.now().toString(),
+        meditationId: selectedMeditation.id,
+        completed: true,
+        rating: rating || undefined,
+        notes: notes || undefined,
+        date: new Date(),
+      }
+      setCompletedSessions([...completedSessions, newSession])
+      resetSessionForm()
+      setSessionDialog(false)
+      setSelectedMeditation(null)
+    }
+  }
+
+  const resetSessionForm = () => {
+    setRating(0)
+    setNotes('')
+  }
+
+  const totalMeditationTime = completedSessions.reduce((sum, session) => {
+    const meditation = meditations.find(m => m.id === session.meditationId)
+    return sum + (meditation?.duration || 0)
+  }, 0)
+
+  const filteredMeditations = {
+    breathing: meditations.filter(m => m.type === 'breathing'),
+    mindfulness: meditations.filter(m => m.type === 'mindfulness'),
+    visualization: meditations.filter(m => m.type === 'visualization'),
+    sleep: meditations.filter(m => m.type === 'sleep'),
+    stress_relief: meditations.filter(m => m.type === 'stress_relief'),
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Meditation & Mindfulness</h2>
+        <p className="text-muted-foreground">Practice guided meditation sessions for inner peace and clarity</p>
+      </div>
+
+      {/* Stats Card */}
+      <Card className="border-2 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-purple-500" />
+            Your Progress
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Sessions Completed</p>
+              <p className="text-2xl font-bold">{completedSessions.length}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Meditation Time</p>
+              <p className="text-2xl font-bold">{totalMeditationTime} min</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Average Rating</p>
+              <p className="text-2xl font-bold">
+                {completedSessions.length > 0
+                  ? (completedSessions.reduce((sum, s) => sum + (s.rating || 0), 0) / completedSessions.filter(s => s.rating).length).toFixed(1)
+                  : '-'
+                }
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Meditation Categories */}
+      <Tabs defaultValue="all" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="popular">🔥 Popular</TabsTrigger>
+          <TabsTrigger value="breathing">Breathing</TabsTrigger>
+          <TabsTrigger value="mindfulness">Mindfulness</TabsTrigger>
+          <TabsTrigger value="visualization">Visualization</TabsTrigger>
+          <TabsTrigger value="stress_relief">Stress Relief</TabsTrigger>
+          <TabsTrigger value="sleep">Sleep</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {meditations.map((meditation) => (
+              <MeditationCard
+                key={meditation.id}
+                meditation={meditation}
+                onStart={() => setSelectedMeditation(meditation)}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Most Popular Tab */}
+        <TabsContent value="popular" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {meditations
+              .filter(m => m.popularity && m.popularity <= 10)
+              .sort((a, b) => (a.popularity || 999) - (b.popularity || 999))
+              .slice(0, 10)
+              .map((meditation) => (
+                <MeditationCard
+                  key={meditation.id}
+                  meditation={meditation}
+                  onStart={() => setSelectedMeditation(meditation)}
+                />
+              ))}
+          </div>
+        </TabsContent>
+
+        {Object.entries(filteredMeditations).map(([type, meds]) => (
+          <TabsContent key={type} value={type} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {meds.map((meditation) => (
+                <MeditationCard
+                  key={meditation.id}
+                  meditation={meditation}
+                  onStart={() => setSelectedMeditation(meditation)}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Video/Practice Dialog */}
+      <Dialog open={!!selectedMeditation && !sessionDialog} onOpenChange={(open) => !open && setSelectedMeditation(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          {selectedMeditation && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Brain className="w-6 h-6 text-purple-500" />
+                  {selectedMeditation.title}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedMeditation.description}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {selectedMeditation.videoUrl ? (
+                  <YouTubePlayer videoUrl={selectedMeditation.videoUrl} title={selectedMeditation.title} />
+                ) : (
+                  <div className="aspect-video w-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Brain className="w-16 h-16 mx-auto text-purple-500 mb-4" />
+                      <p className="text-muted-foreground">Video content coming soon</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setSelectedMeditation(null)}>
+                    Close
+                  </Button>
+                  <Button
+                    className="gap-2"
+                    onClick={() => {
+                      setSessionDialog(true)
+                    }}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Mark as Complete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Completion Dialog */}
+      <Dialog open={sessionDialog} onOpenChange={setSessionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Session Complete! 🎉</DialogTitle>
+            <DialogDescription>
+              How was your meditation experience?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Rate your experience</Label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        star <= rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'fill-slate-200 text-slate-200'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="How do you feel? Any insights?"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSessionDialog(false)}>
+                Skip
+              </Button>
+              <Button onClick={handleCompleteSession}>
+                Save Session
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+interface MeditationCardProps {
+  meditation: Meditation
+  onStart: () => void
+}
+
+function MeditationCard({ meditation, onStart }: MeditationCardProps) {
+  const getTypeInfo = (type: string) => {
+    const types: Record<string, { label: string; color: string }> = {
+      breathing: { label: 'Breathing', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' },
+      mindfulness: { label: 'Mindfulness', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+      visualization: { label: 'Visualization', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300' },
+      sleep: { label: 'Sleep', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' },
+      stress_relief: { label: 'Stress Relief', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+    }
+    return types[type] || types.breathing
+  }
+
+  const getLevelInfo = (level: string) => {
+    const levels: Record<string, { label: string; color: string }> = {
+      beginner: { label: 'Beginner', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+      intermediate: { label: 'Intermediate', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' },
+      advanced: { label: 'Advanced', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+    }
+    return levels[level] || levels.beginner
+  }
+
+  const typeInfo = getTypeInfo(meditation.type)
+  const levelInfo = getLevelInfo(meditation.level)
+
+  return (
+    <Card className="border-2 hover:shadow-lg transition-all cursor-pointer group">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="mb-2">{meditation.title}</CardTitle>
+            <CardDescription>{meditation.description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {/* Badges row */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <Badge className={typeInfo.color}>{typeInfo.label}</Badge>
+            <Badge className={levelInfo.color}>{levelInfo.label}</Badge>
+            {meditation.popularity && meditation.popularity <= 3 && (
+              <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                Top {meditation.popularity}
+              </Badge>
+            )}
+            {meditation.views && (
+              <Badge variant="outline" className="text-xs">
+                {meditation.views}
+              </Badge>
+            )}
+          </div>
+
+          {/* Duration and Video indicator */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              {meditation.duration} min
+            </div>
+            <div className="flex items-center gap-2">
+              {meditation.videoUrl ? (
+                <span className="text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-1 rounded-full flex items-center gap-1">
+                  <ExternalLink className="w-3 h-3" />
+                  Video
+                </span>
+              ) : (
+                <span className="text-xs bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300 px-2 py-1 rounded-full">
+                  Audio Only
+                </span>
+              )}
+            </div>
+          </div>
+          <Button
+            className="w-full gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={onStart}
+          >
+            <Play className="w-4 h-4" />
+            Start
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
