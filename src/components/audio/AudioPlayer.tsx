@@ -6,21 +6,28 @@
  */
 
 import { useState, useEffect } from 'react';
-import { 
-  Play, 
-  Pause, 
-  SkipBack, 
-  SkipForward, 
-  Volume2, 
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
   VolumeX,
   Repeat,
   Timer,
-  Music
+  Music,
+  Download,
+  Check,
+  Loader2,
+  WifiOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { getAudioPlayer } from '@/lib/audio/player';
+import { offlineMediaManager, type DownloadProgress } from '@/lib/audio/offline-manager';
 import type { AudioPlayerState } from '@/lib/audio/types';
+import { Capacitor } from '@capacitor/core';
+import { toast } from 'sonner';
 
 interface AudioPlayerProps {
   /** Compact mode for embedding */
@@ -38,12 +45,44 @@ function formatTime(seconds: number): string {
 export function AudioPlayer({ compact = false, onComplete: _onComplete }: AudioPlayerProps) {
   const [state, setState] = useState<AudioPlayerState | null>(null);
   const [showVolume, setShowVolume] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'downloaded'>('idle');
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    setIsMobile(Capacitor.isNativePlatform());
     const player = getAudioPlayer();
     const unsubscribe = player.subscribe(setState);
     return unsubscribe;
   }, []);
+
+  // Check download status when track changes
+  useEffect(() => {
+    if (!state?.currentTrack) return;
+
+    const checkStatus = async () => {
+      const isDownloaded = await offlineMediaManager.isTrackDownloaded(state.currentTrack!);
+      setDownloadStatus(isDownloaded ? 'downloaded' : 'idle');
+    };
+
+    checkStatus();
+
+    // Subscribe to download progress
+    const unsubscribe = offlineMediaManager.subscribe((progress: DownloadProgress) => {
+      if (progress.trackId === state.currentTrack?.id) {
+        if (progress.status === 'downloading') setDownloadStatus('downloading');
+        if (progress.status === 'completed') {
+          setDownloadStatus('downloaded');
+          toast.success('Track downloaded for offline use');
+        }
+        if (progress.status === 'error') {
+          setDownloadStatus('idle');
+          toast.error('Download failed: ' + progress.error);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [state?.currentTrack?.id]);
 
   if (!state || !state.currentTrack) {
     return null; // Don't show if no track loaded
@@ -68,6 +107,23 @@ export function AudioPlayer({ compact = false, onComplete: _onComplete }: AudioP
 
   const handleVolumeChange = (value: number[]) => {
     player.setVolume(value[0] / 100);
+  };
+
+  const handleDownload = async () => {
+    if (!currentTrack) return;
+    if (downloadStatus === 'downloaded') return;
+
+    try {
+      if (currentTrack.isBundled) {
+        toast.info('This track is included with the app');
+        return;
+      }
+
+      await offlineMediaManager.downloadTrack(currentTrack);
+    } catch (error) {
+      // Error handled by subscription
+      console.error(error);
+    }
   };
 
   if (compact) {
@@ -110,6 +166,32 @@ export function AudioPlayer({ compact = false, onComplete: _onComplete }: AudioP
           <p className="font-medium truncate">{currentTrack.title}</p>
           <p className="text-sm text-muted-foreground truncate">{currentTrack.description}</p>
         </div>
+
+        {/* Offline Indicator / Download Button */}
+        {isMobile && !currentTrack.isBundled && (
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleDownload}
+            disabled={downloadStatus === 'downloading' || downloadStatus === 'downloaded'}
+            className={downloadStatus === 'downloaded' ? 'text-green-600' : ''}
+          >
+            {downloadStatus === 'downloading' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : downloadStatus === 'downloaded' ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+
+        {/* Bundled or already downloaded indicator (if not covered above) */}
+        {(currentTrack.isBundled || (!isMobile && currentTrack.isBundled)) && (
+          <div className="text-green-600 p-2" title="Available Offline">
+            <WifiOff className="h-4 w-4" />
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}
@@ -140,19 +222,19 @@ export function AudioPlayer({ compact = false, onComplete: _onComplete }: AudioP
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
             {showVolume && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg z-10 transition-in fade-in slide-in-from-bottom-2">
                 <Slider
                   value={[isMuted ? 0 : volume * 100]}
                   max={100}
                   step={1}
                   orientation="vertical"
-                  className="h-20"
+                  className="h-24 w-4"
                   onValueChange={handleVolumeChange}
                 />
               </div>
             )}
           </div>
-          
+
           {/* Loop */}
           <Button
             size="icon"
@@ -175,7 +257,7 @@ export function AudioPlayer({ compact = false, onComplete: _onComplete }: AudioP
           </Button>
           <Button
             size="icon"
-            className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 text-white"
+            className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
             onClick={handlePlayPause}
           >
             {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}

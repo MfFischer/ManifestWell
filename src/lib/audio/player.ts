@@ -6,6 +6,7 @@
 import type { AudioTrack, AudioPlayerState, TimerSettings } from './types';
 import { getTrackById } from './tracks';
 import { logger } from '@/lib/utils/logger';
+import { offlineMediaManager } from './offline-manager';
 
 type PlayerCallback = (state: AudioPlayerState) => void;
 
@@ -79,11 +80,18 @@ class AudioPlayerService {
     const track = typeof trackOrId === 'string' ? getTrackById(trackOrId) : trackOrId;
     if (!track || !this.audio) return;
 
-    this.audio.src = track.src;
-    this.audio.volume = this.state.volume;
-    this.state.currentTrack = track;
-    this.state.currentTime = 0;
-    this.notifyListeners();
+    try {
+      // Resolve source using Offline Manager (checks local file -> remote URL -> bundled path)
+      const src = await offlineMediaManager.getTrackUrl(track);
+
+      this.audio.src = src;
+      this.audio.volume = this.state.volume;
+      this.state.currentTrack = track;
+      this.state.currentTime = 0;
+      this.notifyListeners();
+    } catch (error) {
+      logger.error('Failed to load track source', error);
+    }
   }
 
   async play(): Promise<void> {
@@ -209,4 +217,3 @@ export function getAudioPlayer(): AudioPlayerService {
   }
   return playerInstance;
 }
-

@@ -3,7 +3,7 @@
  * Types for offline meditation audio
  */
 
-export type AudioCategory = 
+export type AudioCategory =
   | 'ambient'        // Background sounds (rain, ocean, forest)
   | 'meditation'     // Guided meditation tracks
   | 'breathing'      // Breathing exercise audio
@@ -11,7 +11,7 @@ export type AudioCategory =
   | 'focus'          // Focus/concentration music
   | 'relaxation';    // General relaxation music
 
-export type AudioMood = 
+export type AudioMood =
   | 'calm'
   | 'peaceful'
   | 'energizing'
@@ -28,6 +28,8 @@ export interface AudioTrack {
   duration: number; // in seconds
   /** Path to audio file in public/audio/ */
   src: string;
+  /** Remote URL for downloading if not bundled */
+  remoteUrl?: string;
   /** Whether this is bundled with the app */
   isBundled: boolean;
   /** Attribution/license info */

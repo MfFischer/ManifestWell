@@ -24,7 +24,7 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'calm',
     duration: 600, // 10 min
     src: '/audio/ambient/rain-gentle.mp3',
-    isBundled: true,
+    isBundled: true, // Core track
     attribution: 'Pixabay - Free for commercial use',
     tags: ['rain', 'nature', 'relaxation', 'sleep'],
   },
@@ -36,7 +36,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'peaceful',
     duration: 600,
     src: '/audio/ambient/ocean-waves.mp3',
-    isBundled: true,
+    isBundled: false, // Downloadable
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2022/02/07/audio_18fd8fdd0c.mp3', // Example placeholder
     attribution: 'Pixabay - Free for commercial use',
     tags: ['ocean', 'beach', 'waves', 'water', 'nature'],
   },
@@ -48,7 +49,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'uplifting',
     duration: 600,
     src: '/audio/ambient/forest-birds.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_88447e769f.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['forest', 'birds', 'nature', 'morning'],
   },
@@ -60,7 +62,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'grounding',
     duration: 600,
     src: '/audio/ambient/thunderstorm.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_03d6d53b9d.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['thunder', 'storm', 'rain', 'nature'],
   },
@@ -72,7 +75,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'calm',
     duration: 600,
     src: '/audio/ambient/fireplace.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_06f1406859.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['fire', 'cozy', 'warm', 'relaxation'],
   },
@@ -86,7 +90,7 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'peaceful',
     duration: 600,
     src: '/audio/meditation/peaceful-mind.mp3',
-    isBundled: true,
+    isBundled: true, // Core track
     attribution: 'Pixabay - Free for commercial use',
     tags: ['meditation', 'piano', 'peaceful', 'mindfulness'],
   },
@@ -98,7 +102,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'calm',
     duration: 600,
     src: '/audio/meditation/zen-garden.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_9c05e3f5b8.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['zen', 'asian', 'meditation', 'peaceful'],
   },
@@ -110,7 +115,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'grounding',
     duration: 600,
     src: '/audio/meditation/tibetan-bowls.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_3493e8061e.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['tibetan', 'bowls', 'meditation', 'spiritual'],
   },
@@ -124,7 +130,7 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'calm',
     duration: 300, // 5 min
     src: '/audio/breathing/4-7-8-guide.mp3',
-    isBundled: true,
+    isBundled: true, // Core track
     tags: ['breathing', 'relaxation', 'anxiety', 'guided'],
   },
   {
@@ -135,7 +141,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'grounding',
     duration: 300,
     src: '/audio/breathing/box-breathing.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_2d8b5c9c9b.mp3',
     tags: ['breathing', 'box', 'stress', 'guided'],
   },
 
@@ -148,7 +155,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'sleepy',
     duration: 1800, // 30 min
     src: '/audio/sleep/delta-waves.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_8f4477c7c3.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['sleep', 'delta', 'brainwaves', 'deep sleep'],
   },
@@ -160,7 +168,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'sleepy',
     duration: 1200, // 20 min
     src: '/audio/sleep/lullaby.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_b2b6389774.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['sleep', 'lullaby', 'soft', 'bedtime'],
   },
@@ -174,7 +183,8 @@ export const AUDIO_TRACKS: AudioTrack[] = [
     mood: 'calm',
     duration: 1200,
     src: '/audio/focus/lofi-beats.mp3',
-    isBundled: true,
+    isBundled: false,
+    remoteUrl: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_2f2b3e8c9d.mp3',
     attribution: 'Pixabay - Free for commercial use',
     tags: ['focus', 'lofi', 'study', 'concentration'],
   },
@@ -216,7 +226,7 @@ export function getTracksByMood(mood: AudioTrack['mood']): AudioTrack[] {
 
 export function searchTracks(query: string): AudioTrack[] {
   const q = query.toLowerCase();
-  return AUDIO_TRACKS.filter(t => 
+  return AUDIO_TRACKS.filter(t =>
     t.title.toLowerCase().includes(q) ||
     t.description.toLowerCase().includes(q) ||
     t.tags.some(tag => tag.includes(q))

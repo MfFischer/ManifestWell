@@ -18,17 +18,17 @@ describe('Logger Utility', () => {
   beforeEach(() => {
     // Spy on console methods
     consoleSpy = {
-      log: vi.spyOn(console, 'log').mockImplementation(() => {}),
-      info: vi.spyOn(console, 'info').mockImplementation(() => {}),
-      warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-      error: vi.spyOn(console, 'error').mockImplementation(() => {}),
-      debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
+      log: vi.spyOn(console, 'log').mockImplementation(() => { }),
+      info: vi.spyOn(console, 'info').mockImplementation(() => { }),
+      warn: vi.spyOn(console, 'warn').mockImplementation(() => { }),
+      error: vi.spyOn(console, 'error').mockImplementation(() => { }),
+      debug: vi.spyOn(console, 'debug').mockImplementation(() => { }),
     };
   });
 
   afterEach(() => {
     // Restore environment
-    process.env.NODE_ENV = originalEnv;
+    vi.stubEnv('NODE_ENV', originalEnv || 'test');
     // Restore console methods
     vi.restoreAllMocks();
     // Clear module cache to reload logger with new env
@@ -37,7 +37,7 @@ describe('Logger Utility', () => {
 
   describe('in development environment', () => {
     beforeEach(async () => {
-      process.env.NODE_ENV = 'development';
+      vi.stubEnv('NODE_ENV', 'development');
       vi.resetModules();
     });
 
@@ -74,7 +74,7 @@ describe('Logger Utility', () => {
 
   describe('in production environment', () => {
     beforeEach(async () => {
-      process.env.NODE_ENV = 'production';
+      vi.stubEnv('NODE_ENV', 'production');
       vi.resetModules();
     });
 
@@ -111,7 +111,7 @@ describe('Logger Utility', () => {
 
   describe('argument handling', () => {
     beforeEach(async () => {
-      process.env.NODE_ENV = 'development';
+      vi.stubEnv('NODE_ENV', 'development');
       vi.resetModules();
     });
 
