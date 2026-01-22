@@ -4,6 +4,21 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 
+// Mock capacitor biometric auth to avoid import errors
+vi.mock('@aparajita/capacitor-biometric-auth', () => ({
+  BiometricAuth: {
+    checkBiometry: vi.fn().mockResolvedValue({ isAvailable: false, biometryType: 0 })
+  },
+  BiometryType: {
+    none: 0,
+    touchId: 1,
+    faceId: 2,
+    fingerprintAuthentication: 3,
+    faceAuthentication: 4,
+    irisAuthentication: 5
+  }
+}))
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
