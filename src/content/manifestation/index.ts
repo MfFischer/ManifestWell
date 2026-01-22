@@ -29,7 +29,7 @@ export const manifestationVideos: ManifestationVideo[] = [
     description: 'Enter the alpha brainwave state to access your subconscious mind',
     technique: 'silva-method',
     duration: 15,
-    videoId: 'Ejqwguqv1cc', // Verified: Silva Method Meditation
+    videoId: '9HyOZ6xL_oM', // Verified: Silva Method Meditation
     level: 'beginner',
     verified: true,
     verifiedDate: '2026-01-13',
