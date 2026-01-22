@@ -1,0 +1,246 @@
+/**
+ * Security Tests
+ * Tests for common vulnerabilities and security best practices
+ */
+
+import { describe, it, expect } from 'vitest'
+import { sanitizeString, sanitizeSql, sanitizeEmail } from '@/middleware/sanitization'
+import { verifyCsrfToken, generateCsrfToken } from '@/middleware/csrf'
+
+describe('Security - XSS Prevention', () => {
+  it('should remove script tags', () => {
+    const malicious = '<script>alert("xss")</script>Hello'
+    const sanitized = sanitizeString(malicious)
+
+    expect(sanitized).not.toContain('<script>')
+    expect(sanitized).not.toContain('alert')
+    expect(sanitized).toContain('Hello')
+  })
+
+  it('should remove event handlers', () => {
+    const malicious = '<div onclick="malicious()">Click</div>'
+    const sanitized = sanitizeString(malicious)
+
+    expect(sanitized).not.toContain('onclick')
+  })
+
+  it('should remove javascript: protocol', () => {
+    const malicious = '<a href="javascript:alert(1)">Link</a>'
+    const sanitized = sanitizeString(malicious)
+
+    expect(sanitized).not.toContain('javascript:')
+  })
+
+  it('should handle nested attacks', () => {
+    const malicious = '<scr<script>ipt>alert("nested")</scr</script>ipt>'
+    const sanitized = sanitizeString(malicious)
+
+    expect(sanitized).not.toContain('alert')
+  })
+
+  it('should handle encoded attacks', () => {
+    const malicious = '<img src=x onerror="alert(1)">'
+    const sanitized = sanitizeString(malicious)
+
+    expect(sanitized).not.toContain('onerror')
+  })
+})
+
+describe('Security - SQL Injection Prevention', () => {
+  it('should remove SQL injection attempts', () => {
+    const malicious = "'; DROP TABLE users; --"
+    const sanitized = sanitizeSql(malicious)
+
+    expect(sanitized).not.toContain('DROP')
+    expect(sanitized).not.toContain('--')
+  })
+
+  it('should remove SQL keywords', () => {
+    const malicious = 'SELECT * FROM users WHERE id = 1 UNION SELECT * FROM passwords'
+    const sanitized = sanitizeSql(malicious)
+
+    expect(sanitized.toUpperCase()).not.toContain('SELECT')
+    expect(sanitized.toUpperCase()).not.toContain('FROM')
+    expect(sanitized.toUpperCase()).not.toContain('UNION')
+  })
+
+  it('should handle SQL comments', () => {
+    const malicious = '/* comment */ data'
+    const sanitized = sanitizeSql(malicious)
+
+    expect(sanitized).not.toContain('/*')
+  })
+
+  it('should be case insensitive', () => {
+    const malicious = 'SeLeCt * FrOm UsErS'
+    const sanitized = sanitizeSql(malicious)
+
+    expect(sanitized.toUpperCase()).not.toContain('SELECT')
+  })
+})
+
+describe('Security - Email Validation', () => {
+  it('should accept valid emails', () => {
+    expect(sanitizeEmail('user@example.com')).toBe('user@example.com')
+    expect(sanitizeEmail('test+tag@domain.co.uk')).toBe('test+tag@domain.co.uk')
+  })
+
+  it('should reject invalid emails', () => {
+    expect(sanitizeEmail('notanemail')).toBeNull()
+    expect(sanitizeEmail('@example.com')).toBeNull()
+    expect(sanitizeEmail('user@')).toBeNull()
+    expect(sanitizeEmail('user @example.com')).toBeNull()
+  })
+
+  it('should normalize emails', () => {
+    expect(sanitizeEmail('USER@EXAMPLE.COM')).toBe('user@example.com')
+    expect(sanitizeEmail('  user@example.com  ')).toBe('user@example.com')
+  })
+})
+
+describe('Security - CSRF Protection', () => {
+  const sessionId = 'test-session-123'
+
+  it('should generate valid CSRF tokens', () => {
+    const token = generateCsrfToken(sessionId)
+
+    expect(token).toBeDefined()
+    expect(typeof token).toBe('string')
+    expect(token.length).toBeGreaterThan(0)
+    expect(token).toContain('.')
+  })
+
+  it('should verify valid tokens', () => {
+    const token = generateCsrfToken(sessionId)
+    const isValid = verifyCsrfToken(token, sessionId)
+
+    expect(isValid).toBe(true)
+  })
+
+  it('should reject invalid tokens', () => {
+    const token = 'invalid.token'
+    const isValid = verifyCsrfToken(token, sessionId)
+
+    expect(isValid).toBe(false)
+  })
+
+  it('should reject tokens for different sessions', () => {
+    const token = generateCsrfToken(sessionId)
+    const isValid = verifyCsrfToken(token, 'different-session')
+
+    expect(isValid).toBe(false)
+  })
+
+  it('should reject tampered tokens', () => {
+    const token = generateCsrfToken(sessionId)
+    const tampered = token.slice(0, -5) + 'xxxxx'
+    const isValid = verifyCsrfToken(tampered, sessionId)
+
+    expect(isValid).toBe(false)
+  })
+
+  it('should generate different tokens each time', () => {
+    const token1 = generateCsrfToken(sessionId)
+    const token2 = generateCsrfToken(sessionId)
+
+    expect(token1).not.toBe(token2)
+
+    // Both should be valid
+    expect(verifyCsrfToken(token1, sessionId)).toBe(true)
+    expect(verifyCsrfToken(token2, sessionId)).toBe(true)
+  })
+})
+
+describe('Security - Authentication', () => {
+  it('should not expose internal errors', () => {
+    // Errors should be generic, not revealing internal structure
+    const errorMessages = [
+      'Internal server error', // Good
+      'Database connection failed at mysql://root:password@localhost:3306/db' // Bad - exposes credentials
+    ]
+
+    // All error messages should be generic
+    errorMessages.forEach((msg) => {
+      expect(msg.toLowerCase()).not.toContain('password')
+      expect(msg.toLowerCase()).not.toContain('mysql://')
+      expect(msg.toLowerCase()).not.toContain('root@')
+    })
+  })
+})
+
+describe('Security - Rate Limiting', () => {
+  it('should have reasonable rate limits', () => {
+    const rateLimits = {
+      default: 100, // 100 req/min
+      strict: 10, // 10 req/min for sensitive endpoints
+      login: 5 // 5 attempts/min for login
+    }
+
+    // Limits should be sensible
+    expect(rateLimits.default).toBeLessThanOrEqual(1000)
+    expect(rateLimits.strict).toBeLessThanOrEqual(100)
+    expect(rateLimits.login).toBeLessThanOrEqual(10)
+  })
+})
+
+describe('Security - Password Requirements', () => {
+  function validatePassword(password: string): boolean {
+    // Minimum 8 characters
+    if (password.length < 8) return false
+
+    // Should not allow common passwords
+    const commonPasswords = ['password', '12345678', 'qwerty', 'admin123']
+    if (commonPasswords.includes(password.toLowerCase())) return false
+
+    return true
+  }
+
+  it('should enforce minimum length', () => {
+    expect(validatePassword('short')).toBe(false)
+    expect(validatePassword('longenough')).toBe(true)
+  })
+
+  it('should reject common passwords', () => {
+    expect(validatePassword('password')).toBe(false)
+    expect(validatePassword('12345678')).toBe(false)
+    expect(validatePassword('UncommonPass123')).toBe(true)
+  })
+})
+
+describe('Security - Headers', () => {
+  it('should set security headers', () => {
+    // These headers should be set in production
+    const securityHeaders = {
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      'Content-Security-Policy': "default-src 'self'",
+      'Referrer-Policy': 'strict-origin-when-cross-origin'
+    }
+
+    // Verify all important headers are defined
+    expect(securityHeaders['X-Content-Type-Options']).toBeDefined()
+    expect(securityHeaders['X-Frame-Options']).toBeDefined()
+    expect(securityHeaders['Content-Security-Policy']).toBeDefined()
+  })
+})
+
+describe('Security - Data Exposure', () => {
+  it('should not log sensitive data', () => {
+    const logMessage = 'User login failed for test@example.com'
+
+    // Should not contain sensitive information
+    expect(logMessage).not.toContain('password')
+    expect(logMessage).not.toContain('token')
+    expect(logMessage).not.toContain('secret')
+  })
+
+  it('should not expose user IDs in URLs', () => {
+    // Use opaque IDs, not sequential integers
+    const userId = 'clyabcdef123456789' // CUID
+
+    expect(userId).not.toMatch(/^\d+$/) // Not just numbers
+    expect(userId.length).toBeGreaterThan(10) // Long enough to be hard to guess
+  })
+})

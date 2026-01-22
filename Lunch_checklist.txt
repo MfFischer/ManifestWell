@@ -1,0 +1,9 @@
+Launch Checklist
+☐ Add missing screenshots
+☐ Test on real Android devices
+☐ Create Google Play Developer account ($25 one-time)
+☐ Prepare store listing (description, keywords, screenshots)
+☐ Generate signed AAB bundle
+☐ Submit for review (takes 1-7 days)
+☐ Plan Product Hunt launch for 1 week after approval
+☐ Prepare social media announcement content
